@@ -1,3 +1,6 @@
+import { Customer } from './entity/Customer';
+import { Orderitem } from './entity/Orderitem';
+import { Order } from './entity/Order';
 import "reflect-metadata"
 import { DataSource } from "typeorm"
 import { Brand } from "./entity/Brand"
@@ -13,5 +16,5 @@ export const AppDataSource = new DataSource({
     database: "prmdb",
     synchronize: true,
     logging: false,
-    entities: [Brand, Category, Product],
+    entities: [Brand, Category, Product, Customer, Order, Orderitem],
 })
