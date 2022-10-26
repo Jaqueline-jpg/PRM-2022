@@ -1,24 +1,28 @@
 import { ColumnActionsMode, IColumn, Panel, PanelType, SelectionMode, ShimmeredDetailsList, Stack, TextField } from "@fluentui/react";
 import { IBrand } from "@typesCustom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { DetailsListOptions } from "../../components/DetailsListOptions";
+import { MessageBarCustom } from "../../components/MessageBarCustom";
 import { PageToolBar } from "../../components/PageToolBar";
-import { listBrands } from "../../services/server";
+import { PanelFooterContent } from "../../components/PanelFooterContent";
+import { createBrand, deleteBrand, listBrands } from "../../services/server";
+
 
 export function BrandPage() {
-    
-    //Entities
+
+    //States - Entidades
     const [brand, setBrand] = useState<IBrand>({} as IBrand);
     const [brands, setBrands] = useState<IBrand[]>([]);
 
     //State - Mensagens
     const [messageError, setMessageError] = useState('');
-    const [messageSuccess, setmessageSuccess] = useState('');
+    const [messageSuccess, setMessageSuccess] = useState('');
 
     //State - Carregando
     const [loading, setLoading] = useState(true);
 
-    //State - Loading
-    const [loading, setLoading] = useState(true);
+    //State - Abre e fecha form
+    const [openPanel, setOpenPanel] = useState(false);
 
     //Colunas
     const columns: IColumn[] = [
@@ -29,51 +33,144 @@ export function BrandPage() {
             minWidth: 100,
             isResizable: false,
             columnActionsMode: ColumnActionsMode.disabled
-
+        }, {
+        key: 'option',
+            name: 'Opções',
+            minWidth: 60,
+            maxWidth: 60,
+            isResizable: false,
+            columnActionsMode: ColumnActionsMode.disabled,
+            onRender: (item: IBrand) => (
+                <DetailsListOptions
+                    onEdit={() => handleEdit(item)}
+                    onDelete={() => handleDelete(item)} />
+            )
         }
     ]
 
-    useEffect( () => {
+    const onRenderFooterContent = (): JSX.Element => (
+        <PanelFooterContent
+            id={brand.id as number}
+            loading={loading}
+            onConfirm={handleConfirmSave}
+            onDismiss={()=> setOpenPanel(false)} />
+    );
+
+    useEffect(() => {
 
         listBrands()
-            .then( result => {
+            .then(result => {
                 setBrands(result.data)
             })
-            .catch( error => {
+            .catch(error => {
                 setMessageError(error.message);
                 setInterval(() => {
-                    handleDemissMessageBar('');
+                    handleDemissMessageBar();
                 }, 10000);
             })
-            .finally( ())
+            .finally(() => setLoading(false))
 
     }, [])
 
-    function handledNew() {
+    function handleDemissMessageBar() {
+        setMessageError('');
+        setMessageSuccess('');
+    }
+
+    function handleNew() {
         setBrand({
             name: ''
         });
-        
-        setOpenPanel(true);
+
+        setOpenPanel( true );
+    }
+    function handleEdit(data: IBrand) {
+        setBrand ( data );
+        setOpenPanel ( true );
 
     }
+    function handleDelete(data: IBrand){
+        deleteBrand(item.id)
+        .then(result  => {
+            const filtered = brands.filter(item => (item.id !== brand.id));
 
-    return(
+            setBrands{[ ... filtered]};
+
+            setMessageSuccess{'Cadastro excluído com sucesso!'}
+
+            setTimeout(() => {
+                setMessageSuccess('');
+            }, 5000 );
+        })
+        .catch(error => {
+            setMessageError( (error as Error).message);
+            setTimeout( () => {
+                handleDemissMessageBar();
+            }, 10000);
+        }
+        .finally()
+    }
+    async function handleConfirmSave() {console.log(brand)}
+
+        createBrand(brand)
+            .then(result => {
+                setBrands([...brands, result.data]);
+            })
+            .catch(error => {
+                setMessageError(error.message);
+                setInterval(() => {
+                    handleDemissMessageBar();
+                }, 10000);
+            })
+            .finally(() => {
+                setOpenPanel(false);
+            })
+
+
+        let result = null;
+
+        try {
+
+            if (brand.id) {
+                result = await updateBrand(brand);
+            } else {
+                result = createBrand(brand);
+            }
+
+            const filtered = brands.filter(item => (item.id != BrandPage.id))
+
+            setBrands({...filtered, result.data})
+
+            setMessageSuccess('Novo cadastro salvo com sucesso!')
+            
+            setTimeout(() => {
+                setMessageSuccess('');
+            }, 5000);
+
+        } catch (error) {
+
+            setMessageError((error as Error).message);
+            setTimeo
+
+        }
+
+    return (
         <div id="brand-page" className="main-content">
             <Stack horizontal={false}>
                 <PageToolBar
                     currentPageTitle="Marcas"
                     loading={loading}
-                    onNew={ handledNew }/>
+                    onNew={handleNew} />
 
-                <MesssageBarCustom
+                <MessageBarCustom
                     messageError={messageError}
                     messageSuccess={messageSuccess}
                     onDismiss={handleDemissMessageBar} />
 
+
                 <div className="data-list">
                     <ShimmeredDetailsList
-                        items={brands}
+                        items={brands.sort((a,b) => a.name > b.name ? 1: -1)}
                         columns={columns}
                         setKey="set"
                         enableShimmer={loading}
@@ -85,18 +182,21 @@ export function BrandPage() {
                 className="panel-form"
                 isOpen={openPanel}
                 type={PanelType.medium}
-                headerText="Cadastro de marca"
+                headerText="Cadastro de Marca"
                 isFooterAtBottom={true}
-                onDismiss= {() => setOpenPanel(false)}>
+                onDismiss={() => setOpenPanel(false)}
+                onRenderFooterContent={onRenderFooterContent}>
 
-                <p>Preencha TODOS os campos obrigatórios identificados por <span className= "required">*</span></p>
+                <p>Preencha TODOS os campos obrigatórios identificados por <span className="required">*</span></p>
 
                 <Stack horizontal={false} className="panel-form-content">
                     <TextField
                         label="Nome da Marca"
                         required
                         value={brand.name}
-                        onChange={event => setBrand({...brand, name: (event.target as HTMLInputElement).value})}
+                        onChange={event => setBrand({ ...brand, name: (event.target as HTMLInputElement).value })} />
+
+                        {JSON.stringify(brand)}
                 </Stack>
             </Panel>
         </div>
