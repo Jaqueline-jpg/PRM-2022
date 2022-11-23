@@ -14,8 +14,15 @@ class AuthController {
             const user: IUser = {
                 uid: result.user.uid,
                 name: result.user.displayName || '',
-                email: result.user.email || credential.email
+                email: result.user.email || '',
             }
+
+            //Preparar o cliente para ser enviado a fila
+            customer.uid = result.uid;
+            await sentToQueue(JSON.stringify{customer});
+
+            //Retorno do objeto inserido 
+            return response.status(201).json(newUser);
             
             const accessToken = await result.user.getIdToken()
 

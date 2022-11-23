@@ -21,4 +21,10 @@ const app = initializeApp(firebaseConfig);
 //Autenticação
 const signInAdmin = (email: string, password: string) => (signInWithEmailAndPassword(getAuth(), email, password))
 
+//Envia mensagem a fila
+const sendtoQueeu = async (message: string) => {
+    await 
+}
+
+
 export { FirebaseError, signInAdmin}
